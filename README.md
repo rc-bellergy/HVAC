@@ -5,6 +5,9 @@ A real-time 3D visualization platform for HVAC (Heating, Ventilation, and Air Co
 ## Deployed to:
 https://hvac-digital-twin.ioter.ai/
 
+## Vercel project:
+https://vercel.com/mp-ioters-projects/hvac-digital-twin
+
 ## Technology Stack
 
 - **Frontend Framework**: [Next.js](https://nextjs.org/) v14.2.5
