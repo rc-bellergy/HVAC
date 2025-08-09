@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST="{\"pages/index.js -> ../components/ThreeScene\":{\"id\":\"pages/index.js -> ../components/ThreeScene\",\"files\":[\"static/chunks/components_ThreeScene_js.js\"]}}"

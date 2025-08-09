@@ -60,6 +60,16 @@ html,body{height:100%;margin:0;background:radial-gradient(1200px 800px at 60% -2
 .label.warn{border-color:#ff7b00; color:#ffd9b5; box-shadow:0 0 14px #ff7b0033 inset}
 .label.alert{border-color:#ff355d; color:#ffd5df; box-shadow:0 0 14px #ff355d33 inset}
 
+/* Pipe labels */
+.pipe-label{
+  background:#1a2a4aee;
+  border:1px solid #3a5a8a;
+  color:#a0c0e0;
+  font-size:11px;
+  padding:.2rem .4rem;
+  box-shadow:0 0 8px #3af2ff22 inset, 0 0 10px #3af2ff11;
+}
+
 /* Side panels */
 .side{
   position:fixed; top:100px; width:320px; max-width:86vw; display:grid; grid-template-rows:auto auto auto;

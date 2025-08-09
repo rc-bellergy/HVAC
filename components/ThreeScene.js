@@ -129,6 +129,18 @@ export default function ThreeScene() {
       return el;
     }
 
+    // Utility: pipe labeling
+    function addPipeLabel(pipeGroup, text) {
+      const el = document.createElement('div');
+      el.className = 'label pipe-label';
+      el.textContent = text;
+      const label = new CSS2DObject(el);
+      // Position the label at the center of the pipe
+      label.position.set(0, 0.5, 0);
+      pipeGroup.add(label);
+      return el;
+    }
+
     // ---------- Pipe shader (animated dashes) ----------
     const pipeUniforms = {
       uTime: { value: 0 },
@@ -273,33 +285,58 @@ export default function ThreeScene() {
 
     // ---------- Pipe network ----------
     const pipes = [];
+    let pipeId = 1;
     // Connect tanks to a main line
     const tankMainPts = [new THREE.Vector3(-40, 1.8, -12), new THREE.Vector3(-30, 1.8, 16)];
-    pipes.push(makePipe(tankMainPts, 0.18));
-    tanks.forEach(t => {
+    const tankMainPipe = makePipe(tankMainPts, 0.18);
+    tankMainPipe.group.userData = { id: pipeId++, type: 'pipe', name: `Pipe ${pipeId-1}` };
+    addPipeLabel(tankMainPipe.group, `P${pipeId-1}`);
+    pipes.push(tankMainPipe);
+    tanks.forEach((t, i) => {
       const p = t.position.clone();
-      pipes.push(makePipe([new THREE.Vector3(p.x+1.8, 1.8, p.z), new THREE.Vector3(-30, 1.8, p.z)], 0.12));
+      const tankPipe = makePipe([new THREE.Vector3(p.x+1.8, 1.8, p.z), new THREE.Vector3(-30, 1.8, p.z)], 0.12);
+      tankPipe.group.userData = { id: pipeId++, type: 'pipe', name: `Pipe ${pipeId-1}` };
+      addPipeLabel(tankPipe.group, `P${pipeId-1}`);
+      pipes.push(tankPipe);
     });
 
     // Connect chillers to a main line
     const chillerMainPts = [new THREE.Vector3(-24, 1.2, -3), new THREE.Vector3(24, 1.2, -3)];
-    pipes.push(makePipe(chillerMainPts, 0.16));
-    chillers.forEach(c => {
+    const chillerMainPipe = makePipe(chillerMainPts, 0.16);
+    chillerMainPipe.group.userData = { id: pipeId++, type: 'pipe', name: `Pipe ${pipeId-1}` };
+    addPipeLabel(chillerMainPipe.group, `P${pipeId-1}`);
+    pipes.push(chillerMainPipe);
+    chillers.forEach((c, i) => {
       const p = c.position.clone();
-      pipes.push(makePipe([new THREE.Vector3(p.x, 1.2, p.z+1.5), new THREE.Vector3(p.x, 1.2, -3)], 0.12));
+      const chillerPipe = makePipe([new THREE.Vector3(p.x, 1.2, p.z+1.5), new THREE.Vector3(p.x, 1.2, -3)], 0.12);
+      chillerPipe.group.userData = { id: pipeId++, type: 'pipe', name: `Pipe ${pipeId-1}` };
+      addPipeLabel(chillerPipe.group, `P${pipeId-1}`);
+      pipes.push(chillerPipe);
     });
 
     // Connect compressors to a main line
     const compressorMainPts = [new THREE.Vector3(-20, 1.2, 3), new THREE.Vector3(20, 1.2, 3)];
-    pipes.push(makePipe(compressorMainPts, 0.16));
-    compressors.forEach(c => {
+    const compressorMainPipe = makePipe(compressorMainPts, 0.16);
+    compressorMainPipe.group.userData = { id: pipeId++, type: 'pipe', name: `Pipe ${pipeId-1}` };
+    addPipeLabel(compressorMainPipe.group, `P${pipeId-1}`);
+    pipes.push(compressorMainPipe);
+    compressors.forEach((c, i) => {
       const p = c.position.clone();
-      pipes.push(makePipe([new THREE.Vector3(p.x, 1.2, p.z-2), new THREE.Vector3(p.x, 1.2, 3)], 0.12));
+      const compressorPipe = makePipe([new THREE.Vector3(p.x, 1.2, p.z-2), new THREE.Vector3(p.x, 1.2, 3)], 0.12);
+      compressorPipe.group.userData = { id: pipeId++, type: 'pipe', name: `Pipe ${pipeId-1}` };
+      addPipeLabel(compressorPipe.group, `P${pipeId-1}`);
+      pipes.push(compressorPipe);
     });
 
     // Cross-connect the main lines
-    pipes.push(makePipe([new THREE.Vector3(-28, 1.5, -8), new THREE.Vector3(-28, 1.5, 8)], 0.14));
-    pipes.push(makePipe([new THREE.Vector3(22, 1.5, 0), new THREE.Vector3(22, 1.5, 8)], 0.14));
+    const crossPipe1 = makePipe([new THREE.Vector3(-28, 1.5, -8), new THREE.Vector3(-28, 1.5, 8)], 0.14);
+    crossPipe1.group.userData = { id: pipeId++, type: 'pipe', name: `Pipe ${pipeId-1}` };
+    addPipeLabel(crossPipe1.group, `P${pipeId-1}`);
+    pipes.push(crossPipe1);
+    const crossPipe2 = makePipe([new THREE.Vector3(22, 1.5, 0), new THREE.Vector3(22, 1.5, 8)], 0.14);
+    crossPipe2.group.userData = { id: pipeId++, type: 'pipe', name: `Pipe ${pipeId-1}` };
+    addPipeLabel(crossPipe2.group, `P${pipeId-1}`);
+    pipes.push(crossPipe2);
 
     pipes.forEach(p => scene.add(p.group));
 
