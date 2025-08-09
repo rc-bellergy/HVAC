@@ -56,7 +56,7 @@ export default function ThreeScene() {
     controls.target.set(0, 2.5, 0);
     controls.minDistance = 10;
     controls.maxDistance = 160;
-    controls.autoRotate = true;
+    controls.autoRotate = false;
     controls.autoRotateSpeed = 0.4;
 
     // Lights
@@ -273,49 +273,37 @@ export default function ThreeScene() {
 
     // ---------- Pipe network ----------
     const pipes = [];
+
+    // Tanks main line
     // Connect tanks to a main line
-    const tankMainPts = [new THREE.Vector3(-40, 1.8, -12), new THREE.Vector3(-30, 1.8, 16)];
-    pipes.push(makePipe(tankMainPts, 0.18));
     tanks.forEach(t => {
       const p = t.position.clone();
-      pipes.push(makePipe([new THREE.Vector3(p.x+1.8, 1.8, p.z), new THREE.Vector3(-30, 1.8, p.z)], 0.12));
+      pipes.push(makePipe([new THREE.Vector3(-35, 1.19, p.z), new THREE.Vector3(-28, 1.19, p.z)], 0.12));
     });
 
+    // Chiller main line
+    const chillerMainPts = [new THREE.Vector3(-28, 1.19, -3), new THREE.Vector3(22, 1.19, -3)];
+    pipes.push(makePipe(chillerMainPts, 0.25));
     // Connect chillers to a main line
-    const chillerMainPts = [new THREE.Vector3(-24, 1.2, -3), new THREE.Vector3(24, 1.2, -3)];
-    pipes.push(makePipe(chillerMainPts, 0.16));
     chillers.forEach(c => {
       const p = c.position.clone();
-      pipes.push(makePipe([new THREE.Vector3(p.x, 1.2, p.z+1.5), new THREE.Vector3(p.x, 1.2, -3)], 0.12));
+      pipes.push(makePipe([new THREE.Vector3(p.x, 1.19, p.z+1.19), new THREE.Vector3(p.x, 1.19, -3)], 0.12));
     });
 
+    // Compressor main line
+    const compressorMainPts = [new THREE.Vector3(-28, 1.19, 3), new THREE.Vector3(22, 1.19, 3)];
+    pipes.push(makePipe(compressorMainPts, 0.25));
     // Connect compressors to a main line
-    const compressorMainPts = [new THREE.Vector3(-20, 1.2, 3), new THREE.Vector3(20, 1.2, 3)];
-    pipes.push(makePipe(compressorMainPts, 0.16));
     compressors.forEach(c => {
       const p = c.position.clone();
-      pipes.push(makePipe([new THREE.Vector3(p.x, 1.2, p.z-2), new THREE.Vector3(p.x, 1.2, 3)], 0.12));
+      pipes.push(makePipe([new THREE.Vector3(p.x, 1.19, p.z-2), new THREE.Vector3(p.x, 1.19, 3)], 0.12));
     });
 
     // Cross-connect the main lines
-    pipes.push(makePipe([new THREE.Vector3(-28, 1.5, -8), new THREE.Vector3(-28, 1.5, 8)], 0.14));
-    pipes.push(makePipe([new THREE.Vector3(22, 1.5, 0), new THREE.Vector3(22, 1.5, 8)], 0.14));
+    pipes.push(makePipe([new THREE.Vector3(-28, 1.19, -10), new THREE.Vector3(-28, 1.19, 14)], 0.14));
+    pipes.push(makePipe([new THREE.Vector3(22, 1.19, -3.1), new THREE.Vector3(22, 1.19, 3)], 0.14));
 
     pipes.forEach(p => scene.add(p.group));
-
-    // ---------- Flow particles ----------
-    function movingDot(color=0x8cf0ff){
-      const m = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 12), new THREE.MeshBasicMaterial({ color, transparent:true, opacity:0.9 }));
-      return m;
-    }
-    const flowDots = [];
-    pipes.slice(0,3).forEach(p => { // add dots to first 3 pipes
-      for(let i=0; i<6; i++){
-        const d = movingDot(i%2?0x8cf0ff:0x00ffa9);
-        scene.add(d);
-        flowDots.push({ mesh:d, curve: p.curve, t: Math.random(), speed: 0.04 + Math.random()*0.06 });
-      }
-    });
 
     // ---------- Interactivity ----------
     const raycaster = new THREE.Raycaster();
@@ -481,13 +469,6 @@ export default function ThreeScene() {
       requestAnimationFrame(animate);
       const dt = clock.getDelta();
       pipeUniforms.uTime.value += dt;
-
-      flowDots.forEach(d=>{
-        d.t = (d.t + d.speed * (0.3 + pipeUniforms.uSpeed.value)) % 1;
-        const pos = d.curve.getPointAt(d.t);
-        d.mesh.position.copy(pos);
-      });
-
       controls.update();
       composer.render();
       labelRenderer.render(scene, camera);
