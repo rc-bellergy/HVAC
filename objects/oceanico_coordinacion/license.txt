@@ -1,0 +1,11 @@
+Model Information:
+* title:	OCEANICO COORDINACION
+* source:	https://sketchfab.com/3d-models/oceanico-coordinacion-d21c99014995458399fd3590eea9ebe2
+* author:	fluxabim (https://sketchfab.com/fluxabim)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "OCEANICO COORDINACION" (https://sketchfab.com/3d-models/oceanico-coordinacion-d21c99014995458399fd3590eea9ebe2) by fluxabim (https://sketchfab.com/fluxabim) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

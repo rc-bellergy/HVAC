@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HVAC Digital Twin System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%);
+            color: #fff;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .ui-overlay > * {
+            pointer-events: auto;
+        }
+
+        /* Header */
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(15, 20, 30, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid rgba(64, 224, 208, 0.3);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-tab {
+            padding: 10px 25px;
+            background: rgba(64, 224, 208, 0.1);
+            border: 1px solid rgba(64, 224, 208, 0.3);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            color: #40e0d0;
+        }
+
+        .nav-tab.active {
+            background: rgba(64, 224, 208, 0.3);
+            color: #fff;
+        }
+
+        .nav-tab:hover {
+            background: rgba(64, 224, 208, 0.2);
+        }
+
+        /* Left Panel */
+        .left-panel {
+            position: absolute;
+            left: 20px;
+            top: 80px;
+            width: 280px;
+            background: rgba(15, 20, 30, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(64, 224, 208, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .panel-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            color: #40e0d0;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-box {
+            background: rgba(64, 224, 208, 0.05);
+            border: 1px solid rgba(64, 224, 208, 0.2);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: #8892b0;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            color: #40e0d0;
+            font-weight: bold;
+        }
+
+        .metric-unit {
+            font-size: 14px;
+            color: #8892b0;
+            margin-left: 5px;
+        }
+
+        /* Energy Efficiency Chart */
+        .chart-container {
+            height: 120px;
+            position: relative;
+            margin-top: 10px;
+        }
+
+        #efficiency-chart {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            position: absolute;
+            right: 20px;
+            top: 80px;
+            width: 350px;
+        }
+
+        .status-section {
+            background: rgba(15, 20, 30, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(64, 224, 208, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .compressor-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .compressor-unit {
+            background: rgba(64, 224, 208, 0.05);
+            border: 1px solid rgba(64, 224, 208, 0.2);
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+        }
+
+        .compressor-unit.active {
+            border-color: #40e0d0;
+            background: rgba(64, 224, 208, 0.1);
+        }
+
+        .compressor-icon {
+            width: 30px;
+            height: 30px;
+            margin: 0 auto 5px;
+            background: linear-gradient(135deg, #40e0d0, #1e90ff);
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .compressor-label {
+            font-size: 10px;
+            color: #8892b0;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #40e0d0;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Bar Charts */
+        .bar-chart {
+            margin-top: 15px;
+        }
+
+        .bar-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .bar-label {
+            font-size: 11px;
+            color: #8892b0;
+            width: 80px;
+        }
+
+        .bar-container {
+            flex: 1;
+            height: 20px;
+            background: rgba(64, 224, 208, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #40e0d0, #1e90ff);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        /* Bottom Controls */
+        .bottom-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            background: rgba(64, 224, 208, 0.1);
+            border: 1px solid rgba(64, 224, 208, 0.3);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+            color: #40e0d0;
+        }
+
+        .control-btn:hover {
+            background: rgba(64, 224, 208, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-btn.active {
+            background: rgba(64, 224, 208, 0.3);
+            color: #fff;
+        }
+
+        /* Loading Animation */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            color: #40e0d0;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div class="loading" id="loading">Initializing Digital Twin System...</div>
+    
+    <div class="ui-overlay">
+        <!-- Header -->
+        <div class="header">
+            <div class="nav-tabs">
+                <div class="nav-tab">Layout</div>
+                <div class="nav-tab">HeatMap</div>
+                <div class="nav-tab active">Compressor</div>
+            </div>
+        </div>
+
+        <!-- Left Panel -->
+        <div class="left-panel">
+            <div class="panel-section">
+                <div class="section-title">Air Pressure System</div>
+                <div class="metric-box">
+                    <div class="metric-label">Total power consumption</div>
+                    <div>
+                        <span class="metric-value" id="power-today">1002.15</span>
+                        <span class="metric-unit">kWh</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="metric-box">
+                    <div class="metric-label">Year</div>
+                    <div>
+                        <span class="metric-value" id="power-year">7,234,567,890</span>
+                        <span class="metric-unit">kWh</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="section-title">Total Compressed Air Supply</div>
+                <div class="metric-box">
+                    <div class="metric-label">Today</div>
+                    <div>
+                        <span class="metric-value" id="air-today">1002.15</span>
+                        <span class="metric-unit">m³</span>
+                    </div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Year</div>
+                    <div>
+                        <span class="metric-value" id="air-year">7,234,567,890</span>
+                        <span class="metric-unit">m³</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="section-title">Energy Efficiency Ratio</div>
+                <div class="chart-container">
+                    <canvas id="efficiency-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <div class="status-section">
+                <div class="section-title">Operating Status of Air Compressor Unit</div>
+                <div class="compressor-grid">
+                    <div class="compressor-unit active">
+                        <div class="status-indicator"></div>
+                        <div class="compressor-icon"></div>
+                        <div class="compressor-label">1#Air</div>
+                    </div>
+                    <div class="compressor-unit active">
+                        <div class="status-indicator"></div>
+                        <div class="compressor-icon"></div>
+                        <div class="compressor-label">2#Air</div>
+                    </div>
+                    <div class="compressor-unit active">
+                        <div class="status-indicator"></div>
+                        <div class="compressor-icon"></div>
+                        <div class="compressor-label">3#Air</div>
+                    </div>
+                    <div class="compressor-unit active">
+                        <div class="status-indicator"></div>
+                        <div class="compressor-icon"></div>
+                        <div class="compressor-label">4#Air</div>
+                    </div>
+                    <div class="compressor-unit active">
+                        <div class="status-indicator"></div>
+                        <div class="compressor-icon"></div>
+                        <div class="compressor-label">5#Air</div>
+                    </div>
+                    <div class="compressor-unit active">
+                        <div class="status-indicator" style="background: #4ade80;"></div>
+                        <div class="compressor-icon"></div>
+                        <div class="compressor-label">6#Air</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-section">
+                <div class="section-title">Power Consumption Comparison</div>
+                <div class="bar-chart">
+                    <div class="bar-item">
+                        <div class="bar-label">1#workshop</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 85%;"></div>
+                        </div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-label">2#workshop</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 75%;"></div>
+                        </div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-label">3#workshop</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 90%;"></div>
+                        </div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-label">4#workshop</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 65%;"></div>
+                        </div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-label">5#workshop</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 80%;"></div>
+                        </div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-label">6#workshop</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 70%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-section">
+                <div class="section-title">Yield Comparison</div>
+                <div class="bar-chart">
+                    <div class="bar-item">
+                        <div class="bar-label">1#work</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 75%;"></div>
+                        </div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-label">2#work</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 85%;"></div>
+                        </div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-label">3#work</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 70%;"></div>
+                        </div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-label">4#work</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 88%;"></div>
+                        </div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-label">5#work</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 60%;"></div>
+                        </div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-label">6#work</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 78%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div class="bottom-controls">
+            <div class="control-btn active">MainView</div>
+            <div class="control-btn">HVAC</div>
+            <div class="control-btn">FireService</div>
+            <div class="control-btn">P&D</div>
+            <div class="control-btn">Electrical</div>
+            <div class="control-btn">Carpark</div>
+            <div class="control-btn">Lift</div>
+            <div class="control-btn">CCTV</div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Initialize Three.js scene
+        let scene, camera, renderer, controls;
+        let compressors = [];
+        let pipes = [];
+        let particles = [];
+        let time = 0;
+
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x0f1419, 10, 100);
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(
+                45,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(15, 12, 15);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0x40e0d0, 0.8);
+            directionalLight.position.set(10, 20, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.camera.near = 0.1;
+            directionalLight.shadow.camera.far = 50;
+            directionalLight.shadow.camera.left = -20;
+            directionalLight.shadow.camera.right = 20;
+            directionalLight.shadow.camera.top = 20;
+            directionalLight.shadow.camera.bottom = -20;
+            scene.add(directionalLight);
+
+            // Add point lights for accent
+            const pointLight1 = new THREE.PointLight(0x40e0d0, 0.5, 20);
+            pointLight1.position.set(-5, 5, 5);
+            scene.add(pointLight1);
+
+            const pointLight2 = new THREE.PointLight(0x1e90ff, 0.5, 20);
+            pointLight2.position.set(5, 5, -5);
+            scene.add(pointLight2);
+
+            // Create the 3D scene
+            createFloor();
+            createCompressors();
+            createPipeSystem();
+            createCoolingTowers();
+            createParticleSystem();
+            createGridPattern();
+
+            // Hide loading message
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+            }, 1000);
+        }
+
+        function createFloor() {
+            const floorGeometry = new THREE.PlaneGeometry(30, 30);
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1a1f2e,
+                metalness: 0.2,
+                roughness: 0.8
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Add grid lines on floor
+            const gridHelper = new THREE.GridHelper(30, 30, 0x40e0d0, 0x1a3a3a);
+            gridHelper.position.y = -1.99;
+            scene.add(gridHelper);
+        }
+
+        function createCompressors() {
+            const compressorGroup = new THREE.Group();
+            
+            for (let i = 0; i < 6; i++) {
+                const x = (i % 3) * 4 - 4;
+                const z = Math.floor(i / 3) * 4 - 2;
+                
+                // Base platform
+                const platformGeometry = new THREE.BoxGeometry(3, 0.5, 3);
+                const platformMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x2a4a4a,
+                    metalness: 0.5,
+                    roughness: 0.5
+                });
+                const platform = new THREE.Mesh(platformGeometry, platformMaterial);
+                platform.position.set(x, -1.5, z);
+                platform.castShadow = true;
+                platform.receiveShadow = true;
+                compressorGroup.add(platform);
+
+                // Compressor body (green boxes)
+                const compressorGeometry = new THREE.BoxGeometry(2.5, 2, 2.5);
+                const compressorMaterial = new THREE.MeshStandardMaterial({
+                    color: i === 5 ? 0x4ade80 : 0x40e0d0,
+                    metalness: 0.3,
+                    roughness: 0.6,
+                    emissive: i === 5 ? 0x4ade80 : 0x40e0d0,
+                    emissiveIntensity: 0.2
+                });
+                const compressor = new THREE.Mesh(compressorGeometry, compressorMaterial);
+                compressor.position.set(x, 0, z);
+                compressor.castShadow = true;
+                compressor.receiveShadow = true;
+                compressorGroup.add(compressor);
+                compressors.push(compressor);
+
+                // Motor on top (orange/red cylinders)
+                const motorGeometry = new THREE.CylinderGeometry(0.8, 0.8, 1.5, 16);
+                const motorMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xff6b6b,
+                    metalness: 0.7,
+                    roughness: 0.3,
+                    emissive: 0xff6b6b,
+                    emissiveIntensity: 0.3
+                });
+                const motor = new THREE.Mesh(motorGeometry, motorMaterial);
+                motor.position.set(x, 1.5, z);
+                motor.castShadow = true;
+                compressorGroup.add(motor);
+
+                // Add status light
+                const lightGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+                const lightMaterial = new THREE.MeshBasicMaterial({
+                    color: i === 5 ? 0x00ff00 : 0x40e0d0,
+                    emissive: i === 5 ? 0x00ff00 : 0x40e0d0,
+                    emissiveIntensity: 1
+                });
+                const statusLight = new THREE.Mesh(lightGeometry, lightMaterial);
+                statusLight.position.set(x, 2.5, z);
+                compressorGroup.add(statusLight);
+            }
+
+            scene.add(compressorGroup);
+        }
+
+        function createPipeSystem() {
+            const pipeGroup = new THREE.Group();
+            
+            // Main horizontal pipes
+            const pipeGeometry = new THREE.CylinderGeometry(0.2, 0.2, 12, 8);
+            const pipeMaterial = new THREE.MeshStandardMaterial({
+                color: 0x5a5a5a,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+
+            // Create main distribution pipe
+            const mainPipe = new THREE.Mesh(pipeGeometry, pipeMaterial);
+            mainPipe.rotation.z = Math.PI / 2;
+            mainPipe.position.set(0, 3, 0);
+            pipeGroup.add(mainPipe);
+
+            // Vertical connection pipes
+            for (let i = 0; i < 6; i++) {
+                const x = (i % 3) * 4 - 4;
+                const z = Math.floor(i / 3) * 4 - 2;
+                
+                const vertPipeGeometry = new THREE.CylinderGeometry(0.15, 0.15, 3, 8);
+                const vertPipe = new THREE.Mesh(vertPipeGeometry, pipeMaterial);
+                vertPipe.position.set(x, 2.5, z);
+                pipeGroup.add(vertPipe);
+                pipes.push(vertPipe);
+            }
+
+            scene.add(pipeGroup);
+        }
+
+        function createCoolingTowers() {
+            const towerGroup = new THREE.Group();
+            
+            for (let i = 0; i < 2; i++) {
+                const x = 8;
+                const z = i * 4 - 2;
+                
+                // Tower base
+                const baseGeometry = new THREE.BoxGeometry(3, 4, 3);
+                const baseMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x4a6a8a,
+                    metalness: 0.3,
+                    roughness: 0.7,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const base = new THREE.Mesh(baseGeometry, baseMaterial);
+                base.position.set(x, 0, z);
+                base.castShadow = true;
+                base.receiveShadow = true;
+                towerGroup.add(base);
+
+                // Fan blades
+                const fanGroup = new THREE.Group();
+                for (let j = 0; j < 4; j++) {
+                    const bladeGeometry = new THREE.BoxGeometry(2, 0.1, 0.5);
+                    const bladeMaterial = new THREE.MeshStandardMaterial({
+                        color: 0x40e0d0,
+                        metalness: 0.5,
+                        roughness: 0.5
+                    });
+                    const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
+                    blade.rotation.y = (Math.PI / 2) * j;
+                    fanGroup.add(blade);
+                }
+                fanGroup.position.set(x, 2.5, z);
+                towerGroup.add(fanGroup);
+                
+                // Animate fan rotation
+                fanGroup.userData = { type: 'fan' };
+                particles.push(fanGroup);
+            }
+
+            scene.add(towerGroup);
+        }
+
+        function createParticleSystem() {
+            const particleCount = 200;
+            const particleGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 20;
+                positions[i * 3 + 1] = Math.random() * 10 - 2;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+            }
+            
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0x40e0d0,
+                size: 0.05,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+            
+            const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particleSystem);
+            
+            // Store for animation
+            particleSystem.userData = { type: 'particles', geometry: particleGeometry };
+            particles.push(particleSystem);
+        }
+
+        function createGridPattern() {
+            // Create dot grid pattern similar to the reference
+            const dotGroup = new THREE.Group();
+            const dotGeometry = new THREE.SphereGeometry(0.05, 4, 4);
+            const dotMaterial = new THREE.MeshBasicMaterial({
+                color: 0x40e0d0,
+                transparent: true,
+                opacity: 0.3
+            });
+
+            for (let x = -15; x <= 15; x += 2) {
+                for (let z = -15; z <= 15; z += 2) {
+                    const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+                    dot.position.set(x, -1.9, z);
+                    dotGroup.add(dot);
+                }
+            }
+
+            scene.add(dotGroup);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01;
+
+            // Animate compressors (subtle pulsing)
+            compressors.forEach((comp, index) => {
+                comp.scale.y = 1 + Math.sin(time * 2 + index) * 0.02;
+            });
+
+            // Animate fans
+            particles.forEach(item => {
+                if (item.userData && item.userData.type === 'fan') {
+                    item.rotation.y += 0.05;
+                }
+                if (item.userData && item.userData.type === 'particles') {
+                    const positions = item.userData.geometry.attributes.position.array;
+                    for (let i = 0; i < positions.length; i += 3) {
+                        positions[i + 1] += 0.01;
+                        if (positions[i + 1] > 8) {
+                            positions[i + 1] = -2;
+                        }
+                    }
+                    item.userData.geometry.attributes.position.needsUpdate = true;
+                }
+            });
+
+            // Camera orbit
+            camera.position.x = Math.cos(time * 0.1) * 20;
+            camera.position.z = Math.sin(time * 0.1) * 20;
+            camera.lookAt(0, 0, 0);
+
+            renderer.render(scene, camera);
+        }
+
+        // Draw efficiency chart
+        function drawEfficiencyChart() {
+            const canvas = document.getElementById('efficiency-chart');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            const data = [21.7, 21.24, 27.78, 21.24, 27.78, 21.32, 34.7];
+            const labels = ['8:16', '', '3:32 PM', '', '3:33 PM', '', '3:33 PM'];
+            
+            ctx.strokeStyle = '#40e0d0';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            data.forEach((value, index) => {
+                const x = (index / (data.length - 1)) * canvas.width;
+                const y = canvas.height - (value / 40) * canvas.height;
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            
+            ctx.stroke();
+            
+            // Draw points
+            data.forEach((value, index) => {
+                const x = (index / (data.length - 1)) * canvas.width;
+                const y = canvas.height - (value / 40) * canvas.height;
+                
+                ctx.fillStyle = '#40e0d0';
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Handle window resize
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        window.addEventListener('resize', onWindowResize);
+
+        // Initialize everything
+        init();
+        animate();
+        drawEfficiencyChart();
+
+        // Simulate real-time data updates
+        setInterval(() => {
+            // Update power consumption
+            document.getElementById('power-today').textContent = 
+                (1000 + Math.random() * 10).toFixed(2);
+            
+            // Update air supply
+            document.getElementById('air-today').textContent = 
+                (1000 + Math.random() * 10).toFixed(2);
+            
+            // Redraw efficiency chart with new data
+            drawEfficiencyChart();
+        }, 3000);
+    </script>
+</body>
+</html>
