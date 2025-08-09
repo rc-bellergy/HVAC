@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-  <title>HVAC Digital Twin — Three.js Demo</title>
+  <title>IoTer HVAC Digital Twin Demo — Three.js Demo</title>
   <style>
     :root{
       --bg:#0b1220;
@@ -20,7 +20,7 @@
     #app{position:fixed; inset:0; display:grid; grid-template-rows:auto 1fr auto;}
     /* Top HUD */
     .hud{
-      display:flex; gap:.6rem; align-items:center; padding:.6rem .75rem; flex-wrap:wrap;
+      display:flex; gap:2rem; align-items:center; padding:.6rem .75rem; flex-wrap:wrap;
       background:linear-gradient(180deg, #0b1527ee, #08101cee);
       border-bottom:1px solid #1f3355;
       backdrop-filter: blur(6px) saturate(120%);
@@ -62,7 +62,7 @@
     .label.alert{border-color:#ff355d; color:#ffd5df; box-shadow:0 0 14px #ff355d33 inset}
     /* Side panels */
     .side{
-      position:fixed; top:64px; width:320px; max-width:86vw; display:grid; grid-template-rows:auto auto auto;
+      position:fixed; top:100px; width:320px; max-width:86vw; display:grid; grid-template-rows:auto auto auto;
       gap:.6rem; padding:.6rem; background:linear-gradient(180deg, #081221f0, #091425ee);
       border:1px solid #1c355c; border-radius:12px; z-index:11; backdrop-filter: blur(8px);
     }
@@ -238,8 +238,7 @@
 <body>
   <div id="app">
     <div class="hud">
-      <span class="dot"></span>
-      <div class="brand">HVAC Digital Twin</div>
+      <div class="brand"><img src="assets/IoTer-Logo-white.svg" alt="IoTer Logo" style="vertical-align: middle; margin-right: 2em; margin-left: 1em;">HVAC Digital Twin Demo</div>
       <div class="legend">
         <span class="chip"><span class="sw ok"></span>Normal</span>
         <span class="chip"><span class="sw warn"></span>Warning</span>
@@ -261,7 +260,7 @@
 
     <div id="three"></div>
 
-    <div class="footer">Three.js Digital Twin Demo • HVAC System Monitoring</div>
+    <div class="footer">IoTer Digital Twin Demo • HVAC System Monitoring</div>
   </div>
 
   <aside class="side left" id="side-left">
