@@ -5,8 +5,9 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-export default function ThreeScene() {
+export default function ThreeScene({ modelPath }) {
   const mountRef = useRef(null);
 
   useEffect(() => {
@@ -65,6 +66,16 @@ export default function ThreeScene() {
     const dir = new THREE.DirectionalLight(0xaed4ff, 1.2);
     dir.position.set(40, 60, 20);
     scene.add(dir);
+
+    // Load GLB model if modelPath is provided
+    if (modelPath) {
+      const loader = new GLTFLoader();
+      loader.load(modelPath, (gltf) => {
+        scene.add(gltf.scene);
+      }, undefined, (error) => {
+        console.error('Error loading GLB model:', error);
+      });
+    }
 
     // ---------- Postprocessing (bloom) ----------
     const composer = new EffectComposer(renderer);
@@ -330,6 +341,9 @@ export default function ThreeScene() {
     // ---------- Telemetry simulation ----------
     const allAssets = [...tanks, ...chillers, ...compressors];
     function tickTelemetry(){
+      // Only run telemetry if the required elements exist
+      if (!document.getElementById('throughput')) return;
+      
       let throughput = 0;
       // Generate more random throughput value
       throughput = 0.5 + Math.random() * 3.0; // Random value between 0.5 and 3.5
@@ -363,72 +377,91 @@ export default function ThreeScene() {
           lbl.innerHTML = `${u.name}<br><span class="value">${u.load.toFixed(2)} load</span>`;
         }
       });
-      document.getElementById('throughput').textContent = (throughput).toFixed(2);
-      sparkPush(throughput);
+      const throughputEl = document.getElementById('throughput');
+      if (throughputEl) throughputEl.textContent = (throughput).toFixed(2);
+      if (typeof sparkPush === 'function') sparkPush(throughput);
       if(selected) updateSide(selected);
     }
-    setInterval(tickTelemetry, 10000);
+    
+    // Only set up interval if the throughput element exists
+    if (document.getElementById('throughput')) {
+      setInterval(tickTelemetry, 10000);
+    }
 
     // ---------- Side panel updates ----------
     function updateSide(g){
       if(!g){
-        document.getElementById('selId').textContent = '–';
-        document.getElementById('selName').textContent = 'Tap an object';
-        document.getElementById('selStatus').textContent = '–';
-        document.getElementById('selTemp').textContent = '–';
-        document.getElementById('selLoad').textContent = '–';
+        const selId = document.getElementById('selId');
+        const selName = document.getElementById('selName');
+        const selStatus = document.getElementById('selStatus');
+        const selTemp = document.getElementById('selTemp');
+        const selLoad = document.getElementById('selLoad');
+        
+        if (selId) selId.textContent = '–';
+        if (selName) selName.textContent = 'Tap an object';
+        if (selStatus) selStatus.textContent = '–';
+        if (selTemp) selTemp.textContent = '–';
+        if (selLoad) selLoad.textContent = '–';
         return;
       }
       const u=g.userData;
-      document.getElementById('selId').textContent = u.id;
-      document.getElementById('selName').textContent = `${u.name} (${u.type})`;
-      document.getElementById('selStatus').textContent = u.state.toUpperCase();
-      document.getElementById('selTemp').textContent = `${u.temp.toFixed(1)} °C`;
-      document.getElementById('selLoad').textContent = `${(u.load*100).toFixed(0)} %`;
+      const selId = document.getElementById('selId');
+      const selName = document.getElementById('selName');
+      const selStatus = document.getElementById('selStatus');
+      const selTemp = document.getElementById('selTemp');
+      const selLoad = document.getElementById('selLoad');
+      
+      if (selId) selId.textContent = u.id;
+      if (selName) selName.textContent = `${u.name} (${u.type})`;
+      if (selStatus) selStatus.textContent = u.state.toUpperCase();
+      if (selTemp) selTemp.textContent = `${u.temp.toFixed(1)} °C`;
+      if (selLoad) selLoad.textContent = `${(u.load*100).toFixed(0)} %`;
     }
 
     // ---------- Sparkline ----------
     const spark = document.getElementById('spark');
-    const sg = spark.getContext('2d');
-    let sparkData = [];
-    function sparkDraw(){
-      const w = spark.width = spark.clientWidth*2;
-      const h = spark.height = spark.clientHeight*2;
-      sg.clearRect(0,0,w,h);
-      sg.fillStyle = '#07142a';
-      sg.fillRect(0,0,w,h);
-      sg.strokeStyle = '#13325a'; sg.globalAlpha = .6; sg.lineWidth = 1;
-      for(let x=0; x<w; x+=w/10){ sg.beginPath(); sg.moveTo(x,0); sg.lineTo(x,h); sg.stroke(); }
-      if(sparkData.length<2) return;
-      const max = Math.max(1, ...sparkData);
-      const min = 0;
-      sg.globalAlpha = 1.0;
-      const grad = sg.createLinearGradient(0,0,0,h);
-      grad.addColorStop(0, '#2dfcff44');
-      grad.addColorStop(1, '#00ffa922');
-      sg.fillStyle = grad;
-      sg.beginPath();
-      sparkData.forEach((v,i)=>{
-        const x = i/(sparkData.length-1) * (w-4) + 2;
-        const y = h - (v-min)/(max-min) * (h-6) - 3;
-        if(i===0) sg.moveTo(x,y); else sg.lineTo(x,y);
-      });
-      sg.lineTo(w-2, h-2); sg.lineTo(2, h-2); sg.closePath(); sg.fill();
-      sg.strokeStyle = '#68fff4'; sg.lineWidth = 2.5; sg.globalAlpha = 0.9;
-      sg.beginPath();
-      sparkData.forEach((v,i)=>{
-        const x = i/(sparkData.length-1) * (w-4) + 2;
-        const y = h - (v-min)/(max-min) * (h-6) - 3;
-        if(i===0) sg.moveTo(x,y); else sg.lineTo(x,y);
-      });
-      sg.stroke();
+    let sg, sparkData = [];
+    if (spark) {
+      sg = spark.getContext('2d');
+      function sparkDraw(){
+        const w = spark.width = spark.clientWidth*2;
+        const h = spark.height = spark.clientHeight*2;
+        sg.clearRect(0,0,w,h);
+        sg.fillStyle = '#07142a';
+        sg.fillRect(0,0,w,h);
+        sg.strokeStyle = '#13325a'; sg.globalAlpha = .6; sg.lineWidth = 1;
+        for(let x=0; x<w; x+=w/10){ sg.beginPath(); sg.moveTo(x,0); sg.lineTo(x,h); sg.stroke(); }
+        if(sparkData.length<2) return;
+        const max = Math.max(1, ...sparkData);
+        const min = 0;
+        sg.globalAlpha = 1.0;
+        const grad = sg.createLinearGradient(0,0,0,h);
+        grad.addColorStop(0, '#2dfcff44');
+        grad.addColorStop(1, '#00ffa922');
+        sg.fillStyle = grad;
+        sg.beginPath();
+        sparkData.forEach((v,i)=>{
+          const x = i/(sparkData.length-1) * (w-4) + 2;
+          const y = h - (v-min)/(max-min) * (h-6) - 3;
+          if(i===0) sg.moveTo(x,y); else sg.lineTo(x,y);
+        });
+        sg.lineTo(w-2, h-2); sg.lineTo(2, h-2); sg.closePath(); sg.fill();
+        sg.strokeStyle = '#68fff4'; sg.lineWidth = 2.5; sg.globalAlpha = 0.9;
+        sg.beginPath();
+        sparkData.forEach((v,i)=>{
+          const x = i/(sparkData.length-1) * (w-4) + 2;
+          const y = h - (v-min)/(max-min) * (h-6) - 3;
+          if(i===0) sg.moveTo(x,y); else sg.lineTo(x,y);
+        });
+        sg.stroke();
+      }
+      function sparkPush(v){
+        sparkData.push(v);
+        if(sparkData.length>80) sparkData.shift();
+        sparkDraw();
+      }
+      window.addEventListener('resize', sparkDraw);
     }
-    function sparkPush(v){
-      sparkData.push(v);
-      if(sparkData.length>80) sparkData.shift();
-      sparkDraw();
-    }
-    window.addEventListener('resize', sparkDraw);
 
     // ---------- UI controls ----------
     const flowRadios = [...document.querySelectorAll('input[name=flow]')];
@@ -436,32 +469,54 @@ export default function ThreeScene() {
       const mode = Number(document.querySelector('input[name=flow]:checked').value);
       pipeUniforms.uSpeed.value = mode===0? 0.0 : mode===1? 0.55 : 1.4;
     }));
-    document.getElementById('btnReset').addEventListener('click', ()=>{
-      camera.position.set(42, 28, 44);
-      controls.target.set(0, 2.5, 0);
-      controls.update();
-    });
+    
+    const btnReset = document.getElementById('btnReset');
+    if (btnReset) {
+      btnReset.addEventListener('click', ()=>{
+        camera.position.set(42, 28, 44);
+        controls.target.set(0, 2.5, 0);
+        controls.update();
+      });
+    }
+    
     let dark = true;
-    document.getElementById('btnTheme').addEventListener('click', ()=>{
-      dark = !dark;
-      scene.background = new THREE.Color(dark?0x08101e:0x0e1c28);
-      renderer.toneMappingExposure = dark?1.2:1.0;
-    });
-    document.getElementById('btnStart').addEventListener('click', ()=> pipeUniforms.uSpeed.value = 0.8);
-    document.getElementById('btnStop').addEventListener('click', ()=> pipeUniforms.uSpeed.value = 0.0);
-    document.getElementById('btnPulse').addEventListener('click', ()=>{
-      const g = allAssets[Math.floor(Math.random()*allAssets.length)];
-      g.userData.temp = 85 + Math.random()*10;
-      g.userData.load = 1.1;
-      tickTelemetry();
-    });
+    const btnTheme = document.getElementById('btnTheme');
+    if (btnTheme) {
+      btnTheme.addEventListener('click', ()=>{
+        dark = !dark;
+        scene.background = new THREE.Color(dark?0x08101e:0x0e1c28);
+        renderer.toneMappingExposure = dark?1.2:1.0;
+      });
+    }
+    
+    const btnStart = document.getElementById('btnStart');
+    if (btnStart) {
+      btnStart.addEventListener('click', ()=> pipeUniforms.uSpeed.value = 0.8);
+    }
+    
+    const btnStop = document.getElementById('btnStop');
+    if (btnStop) {
+      btnStop.addEventListener('click', ()=> pipeUniforms.uSpeed.value = 0.0);
+    }
+    
+    const btnPulse = document.getElementById('btnPulse');
+    if (btnPulse) {
+      btnPulse.addEventListener('click', ()=>{
+        const g = allAssets[Math.floor(Math.random()*allAssets.length)];
+        g.userData.temp = 85 + Math.random()*10;
+        g.userData.load = 1.1;
+        if (typeof tickTelemetry === 'function') tickTelemetry();
+      });
+    }
     
     // Auto Rotate toggle
     const btnAutoRotate = document.getElementById('btnAutoRotate');
-    btnAutoRotate.addEventListener('click', ()=>{
-      controls.autoRotate = !controls.autoRotate;
-      btnAutoRotate.textContent = controls.autoRotate ? 'Auto Rotate: ON' : 'Auto Rotate: OFF';
-    });
+    if (btnAutoRotate) {
+      btnAutoRotate.addEventListener('click', ()=>{
+        controls.autoRotate = !controls.autoRotate;
+        btnAutoRotate.textContent = controls.autoRotate ? 'Auto Rotate: ON' : 'Auto Rotate: OFF';
+      });
+    }
 
     // ---------- Animation loop ----------
     let clock = new THREE.Clock();
@@ -486,8 +541,12 @@ export default function ThreeScene() {
     window.addEventListener('resize', onResize);
 
     // Initial telemetry seed - more random data
-    for(let i=0;i<24;i++) sparkPush(0.5 + Math.random() * 3.0);
-    tickTelemetry();
+    if (spark && typeof sparkPush === 'function') { // Ensure spark and sparkPush exist
+      for(let i=0;i<24;i++) sparkPush(0.5 + Math.random() * 3.0);
+    }
+    if (document.getElementById('throughput')) {
+      tickTelemetry();
+    }
 
     // Subtle camera intro from 03.html
     (function introCam(){
